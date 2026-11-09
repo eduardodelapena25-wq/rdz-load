@@ -1,0 +1,35 @@
+name: load
+on:
+  workflow_dispatch:
+    inputs:
+      rate:
+        description: 'peticiones por segundo POR RUNNER'
+        default: '25'
+      duration:
+        description: 'duración (p.ej. 3m, 10m)'
+        default: '3m'
+jobs:
+  attack:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19]
+    steps:
+      - uses: actions/checkout@v4
+      - name: vegeta
+        run: |
+          curl -sL https://github.com/tsenart/vegeta/releases/download/v12.13.0/vegeta_12.13.0_linux_amd64.tar.gz | sudo tar xz -C /usr/local/bin vegeta
+          sed -n "$(( ${{ matrix.shard }} + 1 ))~20p" targets.txt | sed 's/^/GET /' > t.txt
+          echo "== shard ${{ matrix.shard }} =="; cat t.txt
+          vegeta attack -rate=${{ inputs.rate }} -duration=${{ inputs.duration }} -timeout=90s -targets=t.txt \
+            | vegeta report -every=20s
+  canary:
+    runs-on: ubuntu-latest
+    steps:
+      - name: sonda 1 req/3s
+        run: |
+          for i in $(seq 1 400); do
+            curl -s -o /dev/null -m 100 -w "%{http_code} %{time_total}\n" https://rdzframes.halelily16.chatgpt.site/partidos
+            sleep 3
+          done
