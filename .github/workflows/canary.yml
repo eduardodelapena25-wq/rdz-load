@@ -1,0 +1,12 @@
+name: canary
+on: workflow_dispatch
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - name: sonda 1/3s
+        run: |
+          for i in $(seq 1 200); do
+            curl -s -o /dev/null -m 110 -w "%{http_code} %{time_total}\n" https://rdzframes.derekmonsivaisf.chatgpt.site/partidos
+            sleep 3
+          done
